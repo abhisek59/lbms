@@ -50,12 +50,12 @@ const userSchema = new mongoose.Schema({
     membershipDate: {
         type: Date,
         default: Date.now,
-        required: true
+        required: false
     },
-    isActive: {
-        type: Boolean,
-        default: true,
-        required: true
+    role: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user",
     },
     refreshToken: {
         type: String,

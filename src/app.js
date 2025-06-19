@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import registerRouter from './routes/user.routes.js';
 
 const app = express();
  app.use(cors({
@@ -25,4 +26,6 @@ app.use((req, res, next) => {
     console.log(`Request Method: ${req.method}, Request URL: ${req.url}`);
     next();
 });
+
+app.use('/api/v1/users',registerRouter);
 export default app;

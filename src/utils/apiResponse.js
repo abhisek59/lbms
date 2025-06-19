@@ -14,6 +14,6 @@ class ApiResponse {
     return new ApiResponse(statusCode, message);
   }
 }
-export { ApiResponse };
+export default ApiResponse;
 
  
