@@ -4,6 +4,7 @@ import {User} from "../models/user.models.js"
 import jwt from "jsonwebtoken";
 import  ApiResponse from "../utils/apiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import mongoose from "mongoose";
 
 
 const generateAccessAndRefereshTokens = async(userId) =>{
@@ -24,7 +25,7 @@ const generateAccessAndRefereshTokens = async(userId) =>{
 }
 
 const register = asyncHandler(async (req, res) => {
-    const { username, email, fullname, section, address, phoneNo, password } = req.body;
+    const { username, email, fullname, section, address, phoneNo, password,role } = req.body;
     const {avatar} = req.files;
 
     // Validate required fields
@@ -56,7 +57,7 @@ const register = asyncHandler(async (req, res) => {
         address,
         phoneNo,
         avatar: avatars.url,
-        role: "user", // Default role
+                role: role === "admin" ? "admin" : "user", // Allow admin if explicitly se
         password
     });
     console.log("New user object:", newUser);
@@ -206,79 +207,44 @@ const changePassword = asyncHandler(async (req, res) => {
         new ApiResponse(200, {}, "Password changed successfully")
     );
 });
-const UpdateDetails = asyncHandler(async (req, res) => { 
-    const { username, email, fullname, section, address, phoneNo} = req.body;
+const UpdateDetails = asyncHandler(async (req, res) => {
+    // Build updateFields dynamically
+    const allowedFields = ["username", "email", "fullname", "section", "address", "phoneNo"];
+    const updateFields = {};
 
-
-    // Find the user
-    const user = await User.findByIdAndUpdate(
-        req.user._id,{
-            $set: {
-                username:username,
-                email:email,
-                fullname:fullname,
-                section:section,
-                address:address,
-                phoneNo:phoneNo,        
-                fullname: fullname,
-    
-            }
+    allowedFields.forEach(field => {
+        if (req.body[field] !== undefined) {
+            updateFields[field] = req.body[field];
         }
-        ,{new:true}.select("-password -refreshToken")
-    );  
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }   
+    });
+
+    // Handle avatar update if file is provided
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    if (avatarLocalPath) {
+        const avatarUpload = await uploadOnCloudinary(avatarLocalPath);
+        if (!avatarUpload?.url) {
+            throw new ApiError(500, "Error while uploading avatar to cloud");
+        }
+        updateFields.avatar = avatarUpload.url;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+        throw new ApiError(400, "No valid fields provided for update");
+    }
+
+    const userId = req.user._id;
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        { $set: updateFields },
+        { new: true, runValidators: true }
+    ).select("-password -refreshToken");
+
+    if (!user) throw new ApiError(404, "User not found");
+
     return res.status(200).json(
         new ApiResponse(200, { user }, "User details updated successfully")
     );
-});
-const updateAvatar = asyncHandler(async(req, res) => {
-    // Check if user exists
-    if (!req.user?._id) {
-        throw new ApiError(401, "Unauthorized request");
-    }
-
-    // Check if file exists in request
-    const localPath = req.files?.avatar?.[0]?.path;
-    if (!localPath) {
-        throw new ApiError(400, "No avatar file uploaded");
-    }
-
-    // Upload to Cloudinary
-    const avatar = await uploadOnCloudinary(localPath);
-    if (!avatar?.url) {
-        throw new ApiError(500, "Error while uploading avatar to cloud");
-    }
-
-    // Update user avatar
-    const user = await User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $set: {
-                avatar: avatar.url
-            }
-        },
-        {
-            new: true,
-            runValidators: true
-        }
-    ).select("-password -refreshToken");
-
-    // Check if user was updated
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200, 
-                { user }, 
-                "Avatar updated successfully"
-            )
-        );
 });
 
 const getUserProfile = asyncHandler(async(req, res) => {
@@ -396,7 +362,6 @@ export{
     accessRefreshToken,
     changePassword,
     UpdateDetails,
-    updateAvatar,
     getUserProfile  ,
     deleteUser,
 

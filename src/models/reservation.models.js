@@ -29,10 +29,6 @@ const reservationSchema = new mongoose.Schema({
         type: Date,
         required: true  
     }, 
-    notificationSent: {
-        type: Boolean,
-        default: false
-    },
     notes: {
         type: String,
         trim: true
@@ -63,33 +59,5 @@ const reservationSchema = new mongoose.Schema({
         reason: String
     }]
 },{timestamps: true});  
-// Virtual to check if reservation is expired
-reservationSchema.virtual('isExpired').get(function() {
-    return this.status === 'active' && new Date() > this.pickupDate;
-});
-
-// Method to cancel reservation
-reservationSchema.methods.cancel = function(reason) {
-    this.status = 'cancelled';
-    this.cancelReason = reason;
-    this.statusHistory.push({
-        status: 'cancelled',
-        timestamp: new Date(),
-        reason: reason
-    });
-    return this.save();
-};
-
-// Method to complete reservation
-reservationSchema.methods.complete = function() {
-    this.status = 'completed';
-    this.completedAt = new Date();
-    this.statusHistory.push({
-        status: 'completed',
-        timestamp: new Date()
-    });
-    return this.save();
-};
-
 
 export const Reservation = mongoose.model("Reservation", reservationSchema);
