@@ -91,37 +91,4 @@ const fineSchema = new mongoose.Schema({
     }
 },{timestamps:true});
 
-// Add indexes for better query performance
-fineSchema.index({ userId: 1, paidStatus: 1 });
-fineSchema.index({ borrowId: 1 });
-fineSchema.index({ dueDate: 1, paidStatus: 1 });
-
-// Virtual to calculate days overdue
-fineSchema.virtual('daysOverdue').get(function() {
-    if (this.paidStatus) return 0;
-    return Math.max(0, Math.floor((new Date() - this.dueDate) / (1000 * 60 * 60 * 24)));
-});
-
-// Method to process payment
-fineSchema.methods.processPayment = async function(paymentDetails) {
-    this.paidStatus = true;
-    this.paymentDate = new Date();
-    this.paymentDetails = {
-        ...paymentDetails,
-        paidBy: this.userId
-    };
-    return this.save();
-};
-
-// Method to waive fine
-fineSchema.methods.waiveFine = async function(reason, waivedBy) {
-    this.waived.status = true;
-    this.waived.reason = reason;
-    this.waived.waivedBy = waivedBy;
-    this.waived.waivedDate = new Date();
-    this.paidStatus = true;
-    return this.save();
-};
-
-
 export const Fine = mongoose.model('Fine', fineSchema);
