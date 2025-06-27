@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import registerRouter from './routes/user.routes.js';
 import bookRouter from './routes/book.routes.js';
 import reservationRouter from './routes/reservation.routes.js';
+// import { borrowBook } from './controllers/borrow.controller.js';
+import borrowRouter from './routes/borrow.routes.js';
 
 const app = express();
  app.use(cors({
@@ -32,4 +34,5 @@ app.use((req, res, next) => {
 app.use('/api/v1/users',registerRouter);
 app.use('/api/v1/books',bookRouter)
 app.use('/api/v1/reservations',reservationRouter)
+app.use('/api/v1/borrow', borrowRouter)
 export default app;
