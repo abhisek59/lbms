@@ -3,6 +3,8 @@ import { Reservation } from "../models/reservation.models.js";
 import { ApiError } from "../utils/apiError.js";
 import { calculateFine } from "../utils/fine.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import mongoose from "mongoose";
+import { Book } from "../models/book.models.js";
 
 const borrowBook = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
@@ -12,13 +14,12 @@ const borrowBook = asyncHandler(async (req, res) => {
     if (!bookId || !userId) {
         throw new ApiError(400, "Book ID and User ID are required.");
     }
-
     // Check for a valid reservation
-    const reservation = await Reservation.findOne({
-        bookId,
-        userId,
-        status: "reserved"|| "active"
-    });
+ const reservation = await Reservation.findOne({
+    bookId: new mongoose.Types.ObjectId(bookId),
+    userId: new mongoose.Types.ObjectId(userId),
+    status: "active"
+});
     if (!reservation) {
         throw new ApiError(404, "No reservation found for this book, so it cannot be borrowed.");
     }
@@ -34,11 +35,12 @@ const borrowBook = asyncHandler(async (req, res) => {
         bookId,
         borrowDate,
         returnDate,
-        notes
+        notes,
+        status:'borrowed'
     });
 
     // Update reservation status to 'active'
-    reservation.status = "active";
+    reservation.status = "completed";
     await reservation.save();
 
     res.status(201).json({
@@ -67,11 +69,11 @@ const returnBook = asyncHandler (async(req,res)=>{
         throw new ApiError(400, "User ID and Book ID are required.");
     }   
     // Find the borrow record
-    const borrow = await Borrow.findOneAndUpdate({
-        userId,
-        bookId,
+   const borrow = await Borrow.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        bookId: new mongoose.Types.ObjectId(bookId),
         status: 'borrowed'
-    })
+    });
     if (!borrow) {
         throw new ApiError(404, "No active borrow record found for this user and book.");
     }
@@ -196,4 +198,12 @@ const fineAmount = asyncHandler(async(req,res)=>{
 })
 
 
-export { borrowBook,getUserBorrowBook ,returnBook,renewBook,getAllBorrowedBooks,userBorrowedBooks,handleOverdueBooks,fineAmount};
+export { borrowBook,
+    getUserBorrowBook,
+    returnBook,
+    renewBook,
+    getAllBorrowedBooks,
+    userBorrowedBooks,
+    handleOverdueBooks,
+    fineAmount
+};

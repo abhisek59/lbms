@@ -38,7 +38,7 @@ const borrowSchema = new mongoose.Schema({
         type: Number,
         default: 0,
         min: 0,
-        max: 2 // Maximum number of times a book can be renewed
+        max: 2 
     },
     notes: {
         type: String,
@@ -78,10 +78,6 @@ const borrowSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });    
-borrowSchema.virtual('isOverdue').get(function() {
-    return !this.actualReturnDate && 
-           this.status !== 'returned' && 
-           new Date() > this.returnDate;
-});
+
 
 export const Borrow = mongoose.model("Borrow", borrowSchema);

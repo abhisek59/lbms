@@ -362,7 +362,7 @@ export{
     accessRefreshToken,
     changePassword,
     UpdateDetails,
-    getUserProfile  ,
+    getUserProfile ,
     deleteUser,
 
 }
