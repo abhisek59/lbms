@@ -43,7 +43,8 @@ const bookSchema = new mongoose.Schema({
         trim: true
     },
     status: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"Category",
         enum: ['available', 'checked out', 'reserved'],
         default: 'available',
         required: true

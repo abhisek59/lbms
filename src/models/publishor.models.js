@@ -65,27 +65,5 @@ const publishorSchema = new mongoose.Schema({
     timestamps: true    
 });
 
-// Add indexes for better query performance
-publishorSchema.index({ 'contactInfo.email': 1 });
-publishorSchema.index({ status: 1 });
-
-// Virtual for getting total books published
-publishorSchema.virtual('totalBooks').get(function() {
-    return this.books.length;
-});
-
-// Method to add a new book
-publishorSchema.methods.addBook = function(bookId) {
-    if (!this.books.includes(bookId)) {
-        this.books.push(bookId);
-    }
-    return this.save();
-};
-
-// Method to update status
-publishorSchema.methods.updateStatus = function(newStatus) {
-    this.status = newStatus;
-    return this.save();
-};
 
 export const Publishor = mongoose.model("Publishor", publishorSchema);

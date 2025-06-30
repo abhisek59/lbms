@@ -64,12 +64,11 @@ const getUserBorrowBook = asyncHandler (async(req,res)=>{
 })
 const returnBook = asyncHandler (async(req,res)=>{
     const { bookId} = req.params;
-    const userId = req.user._id; // Get userId from JWT
+    const userId = req.user._id;
     if (!userId || !bookId) {
         throw new ApiError(400, "User ID and Book ID are required.");
-    }   
-    // Find the borrow record
-   const borrow = await Borrow.findOne({
+    }
+    const borrow = await Borrow.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         bookId: new mongoose.Types.ObjectId(bookId),
         status: 'borrowed'
@@ -77,26 +76,24 @@ const returnBook = asyncHandler (async(req,res)=>{
     if (!borrow) {
         throw new ApiError(404, "No active borrow record found for this user and book.");
     }
- 
+
     borrow.status = 'returned';
-    borrow.actualReturnDate = new Date(); // Set actual return date to now
+    borrow.actualReturnDate = new Date();
 
-    const fineAmount = calculateFine(borrow.borrowDate, borrow.returnDate, borrow.actualReturnDate);
-    borrow.fine = fineAmount;
-    await borrow.save();   
+    // FIXED: Correct argument order
+    borrow.fine = calculateFine(borrow.returnDate, borrow.actualReturnDate);
+    await borrow.save();
 
-     await Book.findByIdAndUpdate(
+    await Book.findByIdAndUpdate(
         bookId,
         { $inc: { "copies.available": 1 } }
-    ); 
-    
+    );
+
     res.status(200).json({
         message: "Book returned successfully",
         borrow
     });
-
-
-})
+});
 const renewBook = asyncHandler(async(req,res)=>{
     const { bookId } = req.params;
     const userId = req.user._id; // Get userId from JWT
@@ -148,54 +145,54 @@ const userBorrowedBooks = asyncHandler(async (req, res) => {
         borrows
     });
 });
-const getAllBorrowedBooks = asyncHandler(async(req,res)=>{
+const getAllBorrowedBooks = asyncHandler(async (req, res) => {
     const borrows = await Borrow.find()
-    .populate('bookId', 'title author')
-    .populate('userId', 'name email');
+        .populate('bookId', 'title author')
+        .populate('userId', 'name email');
     if (!borrows || borrows.length === 0) {
         throw new ApiError(404, "No borrow records found.");
     }
     res.status(200).json({
         message: "All borrowed books retrieved successfully",
+        totalBorrowed: borrows.length,
         borrows
-    }); 
-
-})
+    });
+});
 const handleOverdueBooks = asyncHandler(async(req,res)=>{
     const currentDate = new Date();
     const overdueBorrows = await Borrow.find({
         returnDate: { $lt: currentDate },
         status: 'borrowed'
-    }).populate('bookId', 'title author').populate('userId', 'name email'); 
+    }).populate('bookId', 'title author').populate('userId', 'name email');
     if (!overdueBorrows || overdueBorrows.length === 0) {
         throw new ApiError(404, "No overdue borrow records found.");
     }
-    overdueBorrows.forEach(borrow => {
-        const fineAmount = calculateFine(borrow.borrowDate, borrow.returnDate, currentDate);
-        borrow.fine = fineAmount;
+    for (const borrow of overdueBorrows) {
+        // FIXED: Correct argument order
+        borrow.fine = calculateFine(borrow.returnDate, currentDate);
         borrow.status = 'overdue';
-        borrow.save();
-    });
+        await borrow.save();
+    }
     res.status(200).json({
         message: "Overdue books handled successfully",
         overdueBorrows
     });
-})
-const fineAmount = asyncHandler(async(req,res)=>{
-    const {borrowId}= req.params;
-    if (!borrowId) {
-        throw new ApiError(400, "Borrow ID is required.");
-    }
-    const borrow = await Borrow.findById(borrowId);
-    if (!borrow) {
-        throw new ApiError(404, "Borrow record not found.");
-    }
-    const fineAmount = calculateFine(borrow.borrowDate, borrow.returnDate, borrow.actualReturnDate || new Date());
-    res.status(200).json({
-        message: "Fine amount calculated successfully",
-        fine: fineAmount
-    }); 
-})
+});
+// const fineAmount = asyncHandler(async(req,res)=>{
+//     const {borrowId}= req.params;
+//     if (!borrowId) {
+//         throw new ApiError(400, "Borrow ID is required.");
+//     }
+//     const borrow = await Borrow.findById(borrowId);
+//     if (!borrow) {
+//         throw new ApiError(404, "Borrow record not found.");
+//     }
+//     const fineAmount = calculateFine(borrow.borrowDate, borrow.returnDate, borrow.actualReturnDate || new Date());
+//     res.status(200).json({
+//         message: "Fine amount calculated successfully",
+//         fine: fineAmount
+//     }); 
+// })
 
 
 export { borrowBook,
@@ -205,5 +202,5 @@ export { borrowBook,
     getAllBorrowedBooks,
     userBorrowedBooks,
     handleOverdueBooks,
-    fineAmount
+   
 };

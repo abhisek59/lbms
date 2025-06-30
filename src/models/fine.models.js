@@ -38,22 +38,6 @@ const fineSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    reminders: [{
-        sentDate: {
-            type: Date,
-            required: true
-        },
-        method: {
-            type: String,
-            enum: ['email', 'sms', 'notification'],
-            required: true
-        },
-        status: {
-            type: String,
-            enum: ['sent', 'failed', 'received'],
-            required: true
-        }
-    }],
     paymentDetails: {
         transactionId: {
             type: String,
